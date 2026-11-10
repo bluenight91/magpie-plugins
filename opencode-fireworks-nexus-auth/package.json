@@ -5,15 +5,26 @@
   "type": "module",
   "main": "./index.mjs",
   "files": [
-    "index.mjs"
+    "index.mjs",
+    "README.md",
+    "README.en.md",
+    "LICENSE",
+    "NOTICE.md"
   ],
   "keywords": [
+    "magpie",
+    "magpie-plugin",
     "opencode",
     "opencode-plugin",
     "fireworks",
     "nexus"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bluenight91/magpie-plugins.git",
+    "directory": "opencode-fireworks-nexus-auth"
+  },
   "magpie": {
     "icon": "https://nexus.fireworks.ai/images/fireworks-logos/icon.svg"
   }
