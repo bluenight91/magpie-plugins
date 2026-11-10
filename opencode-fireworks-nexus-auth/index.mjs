@@ -3,17 +3,28 @@ const BASE = "https://api.fireworks.ai/inference/v1"
 const CONTROL_BASE = "https://api.fireworks.ai"
 const EFFORTS = ["low", "medium", "high", "xhigh", "max"]
 
-function moneyText(money = {}) {
-  const value = Number(money.units ?? 0) + Number(money.nanos ?? 0) / 1_000_000_000
-  return `$${value.toFixed(2)}`
+function asNumber(value) {
+  const n = Number(value ?? 0)
+  return Number.isFinite(n) ? n : 0
 }
 
-function usageWindow(name, subtotal) {
+function formatTokens(n) {
+  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`
+  return String(Math.round(n))
+}
+
+function tokenWindow(name, prompt, completion, models, extras = {}) {
+  const total = prompt + completion
+  const modelNote = models.length ? ` · ${models.slice(0, 3).join("/")}${models.length > 3 ? "…" : ""}` : ""
   return {
     name,
-    display: `~${moneyText(subtotal)} · estimated, may lag`,
+    display: `${formatTokens(prompt)} in · ${formatTokens(completion)} out · ${formatTokens(total)} total${modelNote}`,
     aside: true,
-    ...(name === "5 hours" ? { span: 18_000 } : {}),
+    amount: total,
+    unit: "tokens",
+    ...extras,
   }
 }
 
@@ -31,50 +42,55 @@ async function fetchJson(path, key, init = {}) {
   return response.json()
 }
 
+function sumServerless(rows = []) {
+  let prompt = 0
+  let completion = 0
+  const models = new Set()
+  for (const row of rows) {
+    prompt += asNumber(row.promptTokens)
+    completion += asNumber(row.completionTokens)
+    const model = row.group?.model_name || row.modelName
+    if (model) models.add(String(model).split("/").at(-1))
+  }
+  return { prompt, completion, models: [...models].sort() }
+}
+
 async function readUsage(getAuth) {
   const auth = await getAuth()
   if (auth?.type !== "api") {
-    return { plan: "Nexus (estimated costs)", error: "Sign in to read usage", windows: [] }
+    return { plan: "Nexus (Fireworks tokens)", error: "Sign in to read usage", windows: [] }
   }
 
   const accounts = await fetchJson("/v1/accounts", auth.key)
   const slug = accounts.accounts?.[0]?.name?.split("/").at(-1)
   if (!slug) throw new Error("Fireworks did not return an account")
 
-  let user
-  try {
-    const users = await fetchJson(`/v1/accounts/${slug}/users`, auth.key)
-    user = users.users?.[0]?.name
-  } catch {}
-
   const now = new Date()
-  const fiveHoursStart = new Date(now.getTime() - 5 * 3_600_000)
+  const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  const nextMidnight = new Date(dayStart.getTime() + 86_400_000)
 
-  async function costs(start, end, groupBy, filter) {
-    const body = {
+  async function billingUsage(start) {
+    const qs = new URLSearchParams({
       startTime: start.toISOString(),
-      endTime: end.toISOString(),
-      scope: "ACCOUNT",
-      groupBy,
-      pageSize: 100,
-    }
-    if (filter) body.filter = filter
-    const data = await fetchJson(`/v1/accounts/${slug}/usageCosts:query`, auth.key, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      endTime: now.toISOString(),
+      usageType: "SERVERLESS",
+      groupBy: "model_name",
     })
-    return data.subtotal
+    const data = await fetchJson(`/v1/accounts/${slug}/billingUsage?${qs}`, auth.key)
+    return sumServerless(data.serverlessCosts)
   }
 
-  const fiveHours = await costs(fiveHoursStart, now, ["HOUR"], user ? { user } : undefined)
-  const month = await costs(monthStart, now, ["DAY"])
+  const today = await billingUsage(dayStart)
+  const month = await billingUsage(monthStart)
   return {
-    plan: "Nexus (estimated costs)",
+    plan: "Nexus (Fireworks tokens)",
     windows: [
-      usageWindow("5 hours", fiveHours),
-      usageWindow("This month", month),
+      tokenWindow("Today", today.prompt, today.completion, today.models, {
+        span: 86_400,
+        resetsAt: nextMidnight.toISOString(),
+      }),
+      tokenWindow("This month", month.prompt, month.completion, month.models),
     ],
   }
 }
@@ -114,8 +130,8 @@ export const FireworksNexusPlugin = async () => ({
         return await readUsage(getAuth)
       } catch {
         return {
-          plan: "Nexus (estimated costs)",
-          error: "Couldn't read Fireworks usage costs; they may lag",
+          plan: "Nexus (Fireworks tokens)",
+          error: "Couldn't read Fireworks token usage; it may lag",
           windows: [],
         }
       }

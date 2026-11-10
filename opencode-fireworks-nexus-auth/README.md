@@ -41,7 +41,13 @@ Nexus Auto 会在每轮请求中选择实际服务的模型。模型目录接口
 
 ## 安装
 
-本仓库是私有仓库，先确保当前 GitHub 账号有读取权限。
+远程安装（公开仓库）：
+
+```sh
+magpie plugin add github:bluenight91/magpie-plugins
+```
+
+或从本地目录安装：
 
 ```sh
 git clone git@github.com:bluenight91/magpie-plugins.git
@@ -123,17 +129,17 @@ magpie provider test fireworks-nexus auto
 magpie quota fireworks-nexus
 ```
 
-插件会显示两个“估算成本”窗口：
+插件会显示两个 Fireworks **token 用量**窗口（只展示，不参与路由）：
 
-- **5 hours**：最近 5 小时的 Fireworks 计费成本
-- **This month**：本月 UTC 时间内的 Fireworks 计费成本
+- **Today**：今日 UTC 的 serverless prompt / completion tokens，以及出现过的模型名
+- **This month**：本月 UTC 的同样汇总
 
-这些数字来自 Fireworks 的 `usageCosts:query` API，只用于展示，不参与路由。Fireworks
-官方说明该数据为聚合结果，可能缓存几分钟并滞后一天以上；因此窗口会标注
-“estimated, may lag”。
+数据来自 Fireworks `GET /billingUsage`。官方说明用量按**日**聚合、无亚日桶，可能缓存几分钟；
+因此“5 小时”窗口改为“Today”。`costNanoUsd` / `usageCosts:query` 在部分账号上会长期为 0
+（例如新账号或尚未出额定美元），所以这里优先显示 token，而不是美元。
 
-它们**不是 Nexus Pro 的 5 小时限额或月限额**：没有限额百分比、额度上限或重置时间。
-该 API 也只覆盖 Fireworks 计费的用量，不包含 Anthropic / OpenAI 账号侧的闭源模型费用。
+它们**不是 Nexus Pro 的 5 小时限额或月限额**：没有限额百分比、额度上限。该 API 也只覆盖
+Fireworks 计费的开放模型用量，不包含 Anthropic / OpenAI 账号侧的闭源模型费用。
 
 Nexus CLI 的 Claude Code status line 是另一套本地估算：它读取 Claude Code transcript，
 显示每轮 Auto 实际路由到的模型，并按该模型单价重算会话成本。Magpie 插件不读取
@@ -160,9 +166,9 @@ Provider Keys 则由 Fireworks 账号侧统一管理。
 
 ## 开发
 
-插件包含 provider 声明、Auto 静态元数据、API key loader 和估算用量查询。核心逻辑位于
+插件包含 provider 声明、Auto 静态元数据、API key loader 和 token 用量查询。核心逻辑位于
 `index.mjs`，没有运行时依赖；模型请求不使用自定义 `fetch`，用量钩子使用标准 `fetch`
-查询 Fireworks 控制 API。
+查询 Fireworks `billingUsage`。
 
 ```sh
 magpie plugin --json

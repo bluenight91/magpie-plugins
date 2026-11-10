@@ -12,7 +12,7 @@
 - 上下文：1,048,575 tokens
 - 输出上限：131,072 tokens
 - 推理档位：`low` / `medium` / `high` / `xhigh` / `max`
-- 用量：显示最近 5 小时和本月的 Fireworks 估算成本，不是 Nexus Pro 套餐限额
+- 用量：显示今日与本月的 Fireworks serverless token 用量，不是 Nexus Pro 套餐限额 / 美元账单
 - API：`https://api.fireworks.ai/inference/v1`
 - 无 npm 运行时依赖
 

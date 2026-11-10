@@ -45,7 +45,13 @@ built-in `nexus` provider, and it does not change any agent's selected model.
 
 ## Install
 
-This is a private repository. Make sure your GitHub account has read access first.
+Remote install (public repository):
+
+```sh
+magpie plugin add github:bluenight91/magpie-plugins
+```
+
+Or install from a local checkout:
 
 ```sh
 git clone git@github.com:bluenight91/magpie-plugins.git
@@ -130,17 +136,19 @@ responses or present one backend model's price as a fixed Auto price.
 magpie quota fireworks-nexus
 ```
 
-The plugin shows two estimated-cost windows:
+The plugin shows two Fireworks **token usage** windows (display-only; never used for routing):
 
-- **5 hours**: Fireworks-billed cost over the last five hours
-- **This month**: Fireworks-billed cost in the current UTC month
+- **Today**: UTC-day serverless prompt / completion tokens, plus model names seen
+- **This month**: the same totals for the current UTC month
 
-The values come from Fireworks' `usageCosts:query` API and are display-only; they never
-affect routing. Fireworks documents this data as aggregated, cached for several minutes,
-and potentially more than a day behind, so each window is labeled “estimated, may lag”.
+Values come from Fireworks `GET /billingUsage`. Fireworks aggregates usage into **daily**
+buckets with no sub-daily window and may cache results for several minutes, so the old
+“5 hours” window is now “Today”. On some accounts `costNanoUsd` / `usageCosts:query` stay
+at $0 for a long time (for example a new account before rated dollars appear), so this
+plugin prefers tokens over dollars.
 
-They are **not Nexus Pro's 5-hour or monthly plan limits**: there is no percentage, cap or
-reset time. The API also covers only Fireworks-billed usage, not closed-model costs billed
+These are **not Nexus Pro's 5-hour or monthly plan limits**: there is no percentage or cap.
+The API also covers only Fireworks-billed open-model usage, not closed-model costs billed
 to your Anthropic / OpenAI accounts.
 
 Nexus CLI's Claude Code status line is a separate local estimate: it reads the Claude Code
@@ -170,7 +178,7 @@ credentials out of plugin options while Nexus manages Provider Keys centrally.
 ## Development
 
 `index.mjs` contains the provider declaration, the official Auto metadata, an API-key
-loader and the estimated-usage query. There are no runtime dependencies; model requests do
+loader and the token-usage query. There are no runtime dependencies; model requests do
 not use a custom `fetch`, while the usage hook uses standard `fetch` to call Fireworks'
 control API.
 
