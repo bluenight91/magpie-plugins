@@ -1,0 +1,20 @@
+{
+  "name": "opencode-fireworks-nexus-auth",
+  "version": "0.1.0",
+  "description": "OpenCode provider plugin for Fireworks Nexus Auto",
+  "type": "module",
+  "main": "./index.mjs",
+  "files": [
+    "index.mjs"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "fireworks",
+    "nexus"
+  ],
+  "license": "MIT",
+  "magpie": {
+    "icon": "https://nexus.fireworks.ai/images/fireworks-logos/icon.svg"
+  }
+}
