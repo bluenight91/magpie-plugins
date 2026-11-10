@@ -117,6 +117,28 @@ magpie provider test fireworks-nexus auto
 这些值与 Nexus CLI 的 Auto 静态规格一致。由于 Auto 会在不同轮次选择不同模型，插件
 不根据单次响应动态修改这些声明，也不把某个后端模型的价格冒充为 Auto 的固定价格。
 
+## 用量与费用
+
+```sh
+magpie quota fireworks-nexus
+```
+
+插件会显示两个“估算成本”窗口：
+
+- **5 hours**：最近 5 小时的 Fireworks 计费成本
+- **This month**：本月 UTC 时间内的 Fireworks 计费成本
+
+这些数字来自 Fireworks 的 `usageCosts:query` API，只用于展示，不参与路由。Fireworks
+官方说明该数据为聚合结果，可能缓存几分钟并滞后一天以上；因此窗口会标注
+“estimated, may lag”。
+
+它们**不是 Nexus Pro 的 5 小时限额或月限额**：没有限额百分比、额度上限或重置时间。
+该 API 也只覆盖 Fireworks 计费的用量，不包含 Anthropic / OpenAI 账号侧的闭源模型费用。
+
+Nexus CLI 的 Claude Code status line 是另一套本地估算：它读取 Claude Code transcript，
+显示每轮 Auto 实际路由到的模型，并按该模型单价重算会话成本。Magpie 插件不读取
+Claude Code transcript，也不会替你修改 Claude Code 的 status line 配置。
+
 ## Anthropic / OpenAI 模型路由
 
 仅配置 Fireworks key 时，Auto 可以使用 Fireworks 开放模型。要允许它选择 Anthropic
@@ -138,8 +160,9 @@ Provider Keys 则由 Fireworks 账号侧统一管理。
 
 ## 开发
 
-插件只有两个运行时常量集合：provider/base URL 和五个推理档位。核心逻辑位于
-`index.mjs`，没有运行时依赖，也没有自定义 `fetch`。
+插件包含 provider 声明、Auto 静态元数据、API key loader 和估算用量查询。核心逻辑位于
+`index.mjs`，没有运行时依赖；模型请求不使用自定义 `fetch`，用量钩子使用标准 `fetch`
+查询 Fireworks 控制 API。
 
 ```sh
 magpie plugin --json

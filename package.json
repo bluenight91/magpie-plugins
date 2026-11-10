@@ -1,6 +1,6 @@
 {
   "name": "opencode-fireworks-nexus-auth",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "OpenCode provider plugin for Fireworks Nexus Auto",
   "type": "module",
   "main": "./opencode-fireworks-nexus-auth/index.mjs",

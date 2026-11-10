@@ -42,12 +42,20 @@ harness 配置修改、密钥管理、路由选择或遥测实现。
 
 - Nexus Auto 文档：<https://docs.fireworks.ai/nexus/auto>
 - Nexus APIs and SDKs：<https://docs.fireworks.ai/nexus/apis-and-sdks>
+- Nexus Metrics / status line：<https://docs.fireworks.ai/nexus/metrics>
 - Fireworks Chat Completions：<https://docs.fireworks.ai/api-reference/post-chatcompletions>
+- Fireworks Usage & Cost Breakdown：<https://docs.fireworks.ai/accounts/exporting-usage-and-costs>
+- Fireworks usage costs API：<https://docs.fireworks.ai/api-reference/query-usage-costs>
 - Magpie 插件接口：<https://usemagpie.ai/docs/zh/plugins#overview>
 - OpenCode 插件接口：<https://opencode.ai/docs/plugins/>
 
 `reasoningEffort` 是 Magpie / OpenCode variant 对 AI SDK 的配置形式；Fireworks Chat
 Completions 接收对应的 `reasoning_effort` 字段。插件不自行序列化或修改请求体。
+
+用量窗口来自 `usageCosts:query` 的美元 subtotal，并按 Magpie 的 `aside` 窗口显示。
+它是 Fireworks 聚合成本，不是 Nexus Pro 套餐限额；官方文档说明该数据可能缓存和滞后。
+Nexus CLI 的 Claude Code status line 使用本地 transcript 和模型单价估算，本包未复制
+该实现。
 
 ## 4. 图标与商标
 

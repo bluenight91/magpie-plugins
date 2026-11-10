@@ -124,6 +124,30 @@ These values match Nexus CLI's static Auto specification. Because Auto may choos
 different model on another turn, the plugin does not mutate this metadata from individual
 responses or present one backend model's price as a fixed Auto price.
 
+## Usage and cost
+
+```sh
+magpie quota fireworks-nexus
+```
+
+The plugin shows two estimated-cost windows:
+
+- **5 hours**: Fireworks-billed cost over the last five hours
+- **This month**: Fireworks-billed cost in the current UTC month
+
+The values come from Fireworks' `usageCosts:query` API and are display-only; they never
+affect routing. Fireworks documents this data as aggregated, cached for several minutes,
+and potentially more than a day behind, so each window is labeled “estimated, may lag”.
+
+They are **not Nexus Pro's 5-hour or monthly plan limits**: there is no percentage, cap or
+reset time. The API also covers only Fireworks-billed usage, not closed-model costs billed
+to your Anthropic / OpenAI accounts.
+
+Nexus CLI's Claude Code status line is a separate local estimate: it reads the Claude Code
+transcript, shows the model that actually served each Auto turn, and recomputes session
+cost with that model's rates. This Magpie plugin does not read Claude Code transcripts and
+does not modify Claude Code's status line configuration.
+
 ## Anthropic / OpenAI routing
 
 With only a Fireworks key, Auto can use Fireworks open models. To let it choose Anthropic
@@ -145,8 +169,10 @@ credentials out of plugin options while Nexus manages Provider Keys centrally.
 
 ## Development
 
-`index.mjs` contains the provider declaration, the official Auto metadata and a small API-key
-loader. There are no runtime dependencies and no custom `fetch` implementation.
+`index.mjs` contains the provider declaration, the official Auto metadata, an API-key
+loader and the estimated-usage query. There are no runtime dependencies; model requests do
+not use a custom `fetch`, while the usage hook uses standard `fetch` to call Fireworks'
+control API.
 
 ```sh
 magpie plugin --json
